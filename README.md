@@ -1,14 +1,24 @@
 # Insurance-Premium-Default-Prediction
 
 
+
+**Objective of the project**
+
+Premium paid by the customer is the major revenue source for insurance companies. Default in premium payments results in significant revenue losses and hence insurance companies would like to know upfront which type of customers would default premium payments. 
+
+The objective of this project us to:
+
+1. Build a model that can predict the likelihood of a customer defaulting on premium payments (Who is likely to default)
+
+2. Identify the factors that drive higher default rate (Are there any characteristics of the customers who are likely to default?)
+
+3. Propose a strategy for reducing default rates by using the model and other insights from the analysis (What should be done to reduce the default rates?)
+
+
 **Task**
 
 Predict the probability that a customer will default the premium payment, so that the insurance agent can proactively reach out to the policy holder to follow up for the payment of premium. 
 
-**Introduction**
-
-Premium is the major source of income for insurance companies, without which their liquidity could be threatened. Therefore, companies need to mitigate the risk of payment defaults. To do this, it becomes imperative that insurance companies are able to identify what kinds of customers are likely to default and significant factors that affect them.
-Hence, the goal of this report is to study historical data of the company, garner useful insights through various visualization techniques, develop a model that predicts the likelihood of a customer defaulting, and proffer strategic recommendations the company can use to minimize default.
 
 **Data Information**
 
@@ -34,7 +44,7 @@ A sample of 79,853 customers were randomly chosen, with personal information rel
 
 9. Number of dependants – Between 1 and 4
 
-10. Accommodation – Owned or Rented
+10. Accommodation – Owned (1), Rented (0)
 
 11. Number of premiums paid till date
 
@@ -44,16 +54,23 @@ A sample of 79,853 customers were randomly chosen, with personal information rel
 
 14. Total premium paid
 
-15. Default – Yes or No (*dependent variable*)
+15. Default – 0 indicates that customer has defaulted the premium and 1 indicates that customer has not defaulted the premium
+
 
 There are 17 variables presented with Default being the predicted variable. That is, 17 columns and 79,853 rows in total. Each row represents a single customer.
+
 
 **Reference**
 
 This project is part of Great learning's DSBA programme.
+[More details here](https://www.mygreatlearning.com/data-science/courses/pg-program-data-science-business-analytics-course)
+
 
 **Author**
 
 [Onyeka Okonkwo](https://www.linkedin.com/in/onyeka-okonkwo/)
 
-**
+
+**License and Copyright**
+
+Copyright (c)
