@@ -1,0 +1,450 @@
+---
+title: "Insurance Premium Default Prediction"
+by: Onyeka Okonkwo
+output: html_notebook
+---
+
+##Setting working directory and extraction of data
+library(readxl)
+Insurance_Premium <- read_excel("Insurance Premium Default-Dataset.xlsx")
+View(Insurance_Premium)
+attach(Insurance_Premium)
+Insurance_Premium
+
+##Descriptive Analysis -- 79,853 Observations of 17 variables
+summary(Insurance_Premium)
+head(Insurance_Premium)
+tail(Insurance_Premium)
+class(Insurance_Premium)
+names(Insurance_Premium)
+
+##Check for missing variables -- None found
+sum(is.na(Insurance_Premium))
+
+##Rename some columns to be better explanatory and code friendly
+names(Insurance_Premium)[2]<-"perc_premium_paid_by_cash"
+names(Insurance_Premium)[8]<-"Marital_Status"
+names(Insurance_Premium)[15]<-"Residence"
+names(Insurance_Premium)
+
+##Create new column to calculate Age in Years
+Insurance_Premium1 <- within(Insurance_Premium, perc_paid_in_cash <- perc_premium_paid_by_cash*100)
+Insurance_Premium1
+names(Insurance_Premium1)
+head(Age)
+View(Insurance_Premium1)
+attach(Insurance_Premium1)
+summary(Insurance_Premium1)
+Insurance_Premium2 <- within(Insurance_Premium1, Age <- age_in_days/365)
+Insurance_Premium2
+View(Insurance_Premium2)
+names(Insurance_Premium2)
+
+##Remove "Age In Days" and "Per paid in cash" column
+Insurance_Data <- Insurance_Premium2[,-c(2,3)]
+names(Insurance_Data)
+attach(Insurance_Data)
+summary(Insurance_Data)
+names(Insurance_Data)
+
+#Removing unwanted variable - ID
+Insurance_Data <- Insurance_Data[,-c(1)]
+View(Insurance_Data)
+attach(Insurance_Data)
+Insurance_Data
+str(Insurance_Data)
+names(Insurance_Data)
+
+## Convert Residence into Binary
+Insurance_Data[Insurance_Data=="Urban"]<- 1
+Insurance_Data[Insurance_Data=="Rural"]<- 0
+
+##Convert Sourcing_Channel to Binary
+Insurance_Data[Insurance_Data=="A"]<- 1
+Insurance_Data[Insurance_Data=="B"]<- 2
+Insurance_Data[Insurance_Data=="C"]<- 3
+Insurance_Data[Insurance_Data=="D"]<- 4
+Insurance_Data[Insurance_Data=="E"]<- 5
+
+##Converting variable type
+cols <- c(5,6,7,8,11,12,14)
+Insurance_Data[cols] <- lapply(Insurance_Data[cols], as.factor)
+str(Insurance_Data)
+summary(Insurance_Data)
+attach(Insurance_Data)
+
+##Rename variables for plotting
+names(Insurance_Data)[2]<-"Count_3_6_months_late"
+names(Insurance_Data)[3]<-"Count_6_12_months_late"
+names(Insurance_Data)
+attach(Insurance_Data)
+
+#Exploratory Data Analysis
+
+##Univariate Analysis
+library(ggplot2)
+boxplot(Income,horizontal=TRUE,col="Red",main="Boxplot of Income")
+boxplot(risk_score,horizontal=TRUE,col="Blue",main="Boxplot of Risk Score")
+boxplot(no_of_premiums_paid,horizontal=TRUE,col="Red",main="Boxplot of No. of Premium Paid")
+boxplot(premium,horizontal=TRUE,col="Red",main="Boxplot of Premium")
+boxplot(Insurance_Data$Income ~ Insurance_Data$default, xlab = "Default", ylab = "Income", main = "Income vs Default rate", col = "Red")
+boxplot(Insurance_Data$risk_score ~ Insurance_Data$default, xlab = "Default", ylab = "Risk Score", main = "Risk Score vs Default rate")
+boxplot(Insurance_Data$premium ~ Insurance_Data$default, xlab = "Default", ylab = "Premum", main = "Premium vs Default rate")
+boxplot(Insurance_Data$Income ~ Insurance_Data$sourcing_channel, xlab = "Sourcing Channel", ylab = "Income",main = "Income vs Sourcing Channel")
+boxplot(Insurance_Data$premium ~ Insurance_Data$Count_3_6_months_late, main = "premium vs 3-6 months late")
+boxplot(Insurance_Data$premium ~ Insurance_Data$Count_6_12_months_late, main = "premium vs 6-12 months late")
+boxplot(Insurance_Data$premium ~ Insurance_Data$Count_more_than_12_months_late, main = "premium vs 12 months above late")
+boxplot(Insurance_Data$risk_score ~ Insurance_Data$Veh_Owned, xlab = "Vehicle Owned", ylab = "Risk Score", main = "Risk Score vs Vehicle Owned")
+boxplot(Insurance_Data$risk_score ~ Insurance_Data$default, main = "Risk Score vs Default")
+boxplot(Age,horizontal=TRUE,col="Red",main="Boxplot of Age")
+table(Insurance_Data$default)
+table(Insurance_Data$default,Insurance_Data$Marital_Status)
+table(Insurance_Data$No_of_dep, Insurance_Data$sourcing_channel)
+table(Insurance_Data$Marital_Status)
+table(Insurance_Data$default,Insurance_Data$sourcing_channel)
+table(Insurance_Data$Residence)
+table(Insurance_Data$default,Insurance_Data$Residence)
+table(Insurance_Data$default,Insurance_Data$Veh_Owned)
+table(Insurance_Data$default,Insurance_Data$Residence)
+hist(Insurance_Data$perc_paid_in_cash)
+hist(Insurance_Data$risk_score, xlab = "Risk Score", ylab = "Frequency", main = "Histogram of Risk Score")
+hist(Insurance_Data$no_of_premiums_paid, xlab = "No. of Premiums Paid", ylab = "Frequency", main = "Histogram of Number of Premiums Paid")
+hist(Insurance_Data$premium, xlab = "Premium", ylab = "Frequency", main = "Histogram of Premium")
+hist(Insurance_Data$Age, xlab = "Age", ylab = "Frequency", main = "Histogram of Age")
+hist(Insurance_Data$Count_3_6_months_late)
+hist(Insurance_Data$Count_6_12_months_late)
+hist(Insurance_Data$Count_more_than_12_months_late)
+plot(Count_more_than_12_months_late, Income)
+plot(Count_3_6_months_late, Income)
+plot(Count_6_12_months_late, Income)
+str(Insurance_Data)
+
+##Correlation
+
+##install.packages("corrplot")
+library(corrplot)
+Insurance_Data_num<-Insurance_Data[,c(1:4,9,10,13,15,16)]
+corrmatrix<-cor(Insurance_Data_num)
+corrplot(corrmatrix,method='circle',type='upper',order='FPC') ##Numerical data is not correlated
+corrplot(corrmatrix, method = "number", type = "upper", diag = F)
+cor(Insurance_Data$Income, Insurance_Data$premium) #[1] 0.3028252
+cor(Insurance_Data$Income, Insurance_Data$perc_paid_in_cash) #[1] -0.03186755
+library(psych)
+cortest.bartlett(corrmatrix)
+KMO(corrmatrix)
+summary(Insurance_Data)
+
+##Treatment of Outliers
+
+##Income
+quantile(Insurance_Data$Income)
+quantile(Insurance_Data$Income, c(0.95))
+Insurance_Data$Income[which(Insurance_Data$Income>450050)]<- 450050
+quantile(Insurance_Data$Income)
+
+##Premium
+quantile(Insurance_Data$premium)
+quantile(Insurance_Data$premium, c(0.90))
+Insurance_Data$premium[which(Insurance_Data$premium>22200)]<- 22200
+quantile(Insurance_Data$premium)
+
+##Age
+quantile(Insurance_Data$Age)
+quantile(Insurance_Data$Age, c(0.90))
+Insurance_Data$Age[which(Insurance_Data$Age>70)]<- 70
+quantile(Insurance_Data$Age)
+
+##Binding treated variables with original data
+boxplot(Insurance_Data$Income,horizontal=TRUE,col="Red",main="Boxplot of Income")
+hist(Insurance_Data$Income)
+boxplot(Insurance_Data$premium,horizontal=TRUE,col="Red",main="Boxplot of Premium")
+hist(Insurance_Data$premium)
+boxplot(Insurance_Data$Age,horizontal=TRUE,col="Red",main="Boxplot of Age")
+hist(Insurance_Data$Age)
+View(Insurance_Data)
+
+##Adding new Variables
+Insurance_Data1 <- within(Insurance_Data, perc_paid_in_credit <- 100 - perc_paid_in_cash)
+View(Insurance_Data1)
+Insurance_Premium_Data <- Insurance_Data1
+View(Insurance_Premium_Data)
+attach(Insurance_Premium_Data)
+str(Insurance_Premium_Data)
+library(corrplot)
+Insurance_Data_num1<-Insurance_Premium_Data[,c(1:4,9,10,13,15,16,17)]
+corrmatrix<-cor(Insurance_Data_num1)
+corrplot(corrmatrix,method='circle',type='upper',order='FPC') ##Income and Premium is correlated
+corrplot(corrmatrix, method = "number", type = "upper", diag = F)
+
+##Remove Premium since it's correlated to Income and Percentage paid in Credit
+Insurance_Premium_Data <- Insurance_Premium_Data[,-c(13,17)]
+View(Insurance_Premium_Data)
+attach(Insurance_Premium_Data)
+Insurance_Premium_Data
+
+##Important variables in data using Rforest
+library(dplyr)
+library(caTools)
+library(caret)
+
+##we are splitting the data such that we have 70% of the data is Train Data and 30% of the data is my Test Data
+seed=100
+set.seed(seed)
+split <- sample.split(Insurance_Premium_Data$default, SplitRatio = 0.7)
+Insurancetrain<- subset(Insurance_Premium_Data, split == TRUE)
+Insurancetest<- subset(Insurance_Premium_Data, split == FALSE)
+dim(Insurancetrain)
+dim(Insurancetest)
+prop.table(table(Insurancetrain$default)) #[1] 55897 15
+prop.table(table(Insurancetest$default)) #[1] 23956 15
+
+##Trying out Random Forest
+install.packages("randomForest")
+library(randomForest)
+Rforest = randomForest(default~.,data=Insurancetrain,ntree=201,mtry=10,nodesize=10,importance=TRUE)
+print(Rforest)
+plot(Rforest)
+importance(Rforest)
+impVar <- round(randomForest::importance(Rforest), 2)
+impVar[order(impVar[,3], decreasing=TRUE),]
+varImpPlot(Rforest, type=1, pch=20, col=1, cex=.5, main="")
+
+###Tune up the RF model to find out the best mtry
+set.seed(seed)
+tRforest = tuneRF(x=Insurancetrain[,-c(13)],y=Insurancetrain$default,mtryStart = 10,stepFactor = 2,ntree=31,improve = 0.0001,
+nodesize=10,trace=TRUE,plot=TRUE,doBest=TRUE,importance=TRUE)
+
+##build the refined RF model
+set.seed(seed)
+Rforest1 = randomForest(default~.,data=Insurancetrain,ntree=31,mtry=2,nodesize=10,importance=TRUE)
+print(Rforest1)
+plot(Rforest1)
+importance(Rforest1)
+impVar <- round(randomForest::importance(Rforest1), 2)
+impVar[order(impVar[,3], decreasing=TRUE),]
+varImpPlot(Rforest1, type=1, pch=20, col=1, cex=.5, main="")
+
+##Scoring and Prediction on Train
+Insurancetrain$predict.class = predict(Rforest1, Insurancetrain, type="class")
+Insurancetrain$prob1 = predict(Rforest1, Insurancetrain, type="prob")[,"1"]
+tbl=table(Insurancetrain$default, Insurancetrain$predict.class)
+print(tbl)
+
+##Test Data
+set.seed(seed)
+Rforest2 = randomForest(default~.,data=Insurancetest,ntree=31,mtry=2,nodesize=10,importance=TRUE)
+print(Rforest2)
+plot(Rforest2)
+importance(Rforest2)
+
+##Scoring and Prediction on Test
+Insurancetest$predict.class = predict(Rforest2, Insurancetest, type="class")
+Insurancetest$prob1 = predict(Rforest2, Insurancetest, type="prob")[,"1"]
+tbl=table(Insurancetest$default, Insurancetest$predict.class)
+tbl
+
+##Convert data to data frame to run logistic regression
+InsuranceData <- Insurance_Premium_Data
+InsuranceData = as.data.frame(InsuranceData)
+InsuranceData$default = as.factor(InsuranceData$default)
+attach(InsuranceData)
+View(InsuranceData)
+set.seed(seed)
+split <- sample.split(InsuranceData$default, SplitRatio = 0.7)
+Insurancetrain<- subset(InsuranceData, split == TRUE)
+Insurancetest<- subset(InsuranceData, split == FALSE)
+dim(Insurancetrain)
+dim(Insurancetest)
+prop.table(table(Insurancetrain$default)) #[1] 55897 15
+prop.table(table(Insurancetest$default)) #[1] 23956 15
+
+##GLM without adjusting for imbalance
+model <- glm (default ~ ., data = Insurancetrain, family = binomial)
+summary(model)
+predict <- predict(model, type = 'response')
+table(Insurancetrain$default, predict > 0.5)
+varImp(object = model)
+
+##On test data
+modeltest <- glm (default ~ ., data = Insurancetest, family = binomial)
+summary(modeltest)
+predict_test <- predict(modeltest, type = 'response')
+table(Insurancetest$default, predict_test > 0.5)
+varImp(object = modeltest)
+library(ROCR)
+ROCRpred1 <- prediction(predict_test, Insurancetest$default)
+ROCRperf1 <- performance(ROCRpred1, 'tpr','fpr')
+plot(ROCRperf1, colorize = TRUE, text.adj = c(-0.2,1.7))
+
+##Dealing with imbalance using SMOTE
+Insurancetrain <- Insurancetrain[,-c(16,17)]
+Insurancetest <- Insurancetest[,-c(16,17)]
+attach(Insurancetrain)
+attach(Insurancetest)
+InsuranceData = as.data.frame(InsuranceData)
+InsuranceData$default = as.factor(InsuranceData$default)
+attach(InsuranceData)
+View(InsuranceData)
+Insurancetrain = as.data.frame(Insurancetrain)
+Insurancetest = as.data.frame(Insurancetest)
+InsuranceData = as.matrix.data.frame(InsuranceData)
+library(DMwR)
+attach(Insurancetrain)
+InsuranceSMOTE<-SMOTE(default~., Insurancetrain, perc.over = 4000, k= 3, perc.under = 200)
+prop.table(table(InsuranceSMOTE$default))
+prop.table(table(Insurancetrain$default))
+
+##Create control parameter for GLM
+outcomevar<-'default'
+regressors<-c("Income","Count_6_12_months_late","Count_3_6_months_late","Count_more_than_12_months_late",
+"perc_paid_in_cash","no_of_premiums_paid","risk_score","Age","sourcing_channel",
+"Veh_Owned","Marital_Status","Residence","Accomodation","No_of_dep")
+trainctrl<-trainControl(method = 'repeatedcv',number = 10,repeats = 3)
+Insuranceglm<-train(InsuranceSMOTE[,regressors],InsuranceSMOTE[,outcomevar],method = "glm", family = "binomial",trControl = trainctrl)
+summary(Insuranceglm$finalModel)
+Insuranceglmcoeff<-exp(coef(Insuranceglm$finalModel))
+varImp(object = Insuranceglm)
+plot(varImp(object = Insuranceglm), main="Variable Importance for Adjusted Logistic Regression")
+
+##Scoring/Predicting the training dataset
+Insurancetrain$predict.class <- predict(Insuranceglm, Insurancetrain, type="raw") #Accuracy : 0.8872 Pos Pred Value : 0.9667 Neg Pred Value : 0.2847
+Insurancetrain$predict.score <- predict(Insuranceglm, Insurancetrain, type="prob") #Sensitivity : 0.9111 Specificity : 0.5299
+head(Insurancetrain)
+
+##Confusion Matrix for Train data
+defaultpredictiontrain<-predict.train(object = Insuranceglm,Insurancetrain[,regressors],type = "raw")
+confusionMatrix(defaultpredictiontrain,Insurancetrain[,outcomevar], positive='1')
+
+##Gini for train data
+library(ineq)
+gini = ineq(Insurancetrain$predict.score[,2], type="Gini")
+gini
+
+##Scoring/Predicting using the Test Data set
+Insurancetest$predict.class <- predict(Insuranceglm, Insurancetest, type="raw")
+Insurancetest$predict.score <- predict(Insuranceglm, Insurancetest, type="prob")
+head(Insurancetest)
+
+##Confusion Matrix for Test data
+defaultpredictiontest<-predict(object = Insuranceglm,Insurancetest[,regressors],type = "raw") #Accuracy : 0.8847 Pos Pred Value : 0.9650
+confusionMatrix(defaultpredictiontest,Insurancetest[,outcomevar], positive='1') #Sensitivity : 0.9101 Specificity : 0.5050 Neg Pred Value : 0.2727
+library(ROCR)
+p <- predict(InsuranceData, newdata=subset(Insurancetest,select=c(2,3,4,5,6,7,8,9,10,11,12,14,15,16)), type="response")
+pr <- prediction(p, Insurancetest$default)
+prf <- performance(pr, measure = "tpr", x.measure = "fpr")
+plot(prf)
+
+##Building Naive Bayes Model###
+View(InsuranceData)
+Insurancetest <- Insurancetest[,-c(16,17)]
+Insurancetrain <- Insurancetrain[,-c(16,17)]
+attach(Insurancetest)
+attach(Insurancetrain)
+library(e1071)
+NB.InsuranceTrain=naiveBayes(Insurancetrain$default ~ . , data = Insurancetrain)
+NB.InsuranceTrain
+NB.InsuranceTest=naiveBayes(Insurancetest$default ~ ., data = Insurancetest)
+NB.InsuranceTest
+
+##Predict on Train data
+Insurancetrain1 <- Insurancetrain[,-c(13)]
+NBpredTrain=predict(NB.InsuranceTrain,Insurancetrain1)
+Insurancetrain1$default <- Insurancetrain
+table(NBpredTrain,Insurancetrain1$default)
+
+##Predict on Test data
+Insurancetest1 <- Insurancetest[,-c(13)]
+NBpredTest=predict(NB.InsuranceTest,Insurancetest1)
+table(NBpredTest,Insurancetest1$default)
+
+##Building KNN Model ##Try multiple K and pick one with most improvement in model as optimal K - 7
+dim(Insurancetrain)
+dim(Insurancetest)
+library(class)
+predKNN7 = knn(Insurancetrain[-13], Insurancetest[-13], cl = Insurancetrain[,13], k = 7)
+table(Insurancetest$default, predKNN7)
+
+##Fitting KNN to optimize for best value of K
+library(caret)
+knn_fit = train(default ~ ., data = Insurancetrain, method = "knn",
+trControl = trainControl(method = "cv", number = 3),
+tuneLength = 12)
+knn_fit
+confusionMatrix(knn_fit,Insurancetest$default, positive='1')
+confusionMatrix(knn_fit,Insurancetrain$default, positive='1')
+
+
+##Ensemble Method
+
+##Bootstrap Aggregation or Bagging
+library(gbm)
+library(xgboost)
+library(caret)
+library(ipred)
+library(plyr)
+library(dplyr)
+library(rpart)
+
+mod.bagging <- bagging(default ~.,
+data=Insurancetrain,
+control=rpart.control(maxdepth=5, minsplit=4))
+bag.pred <- predict(mod.bagging, Insurancetest) # Pos Pred Value : 0.120747 Neg Pred Value : 0.991539
+bag.predtrain <- predict(mod.bagging, Insurancetrain)
+confusionMatrix(Insurancetest$default,bag.pred) # Accuracy : 0.9371 Sensitivity : 0.48787 Specificity : 0.944117
+confusionMatrix(Insurancetrain$default,bag.predtrain)
+
+##Boosting
+##Extreme Gradient Boosting (XGB)##
+library(xgboost)
+library(readr)
+library(stringr)
+library(caret)
+library(car)
+
+##Convert Test and Train Data to Numeric
+Insurancetrain$default =as.numeric(Insurancetrain$default)
+Insurancetrain$Marital_Status =as.numeric(Insurancetrain$Marital_Status)
+Insurancetrain$Veh_Owned =as.numeric(Insurancetrain$Veh_Owned)
+Insurancetrain$No_of_dep =as.numeric(Insurancetrain$No_of_dep)
+Insurancetrain$Accomodation =as.numeric(Insurancetrain$Accomodation)
+Insurancetrain$sourcing_channel =as.numeric(Insurancetrain$sourcing_channel)
+Insurancetrain$Residence =as.numeric(Insurancetrain$Residence)
+Insurancetest$default =as.numeric(Insurancetest$default)
+Insurancetest$Marital_Status =as.numeric(Insurancetest$Marital_Status)
+Insurancetest$Veh_Owned =as.numeric(Insurancetest$Veh_Owned)
+Insurancetest$No_of_dep =as.numeric(Insurancetest$No_of_dep)
+Insurancetest$Accomodation =as.numeric(Insurancetest$Accomodation)
+Insurancetest$sourcing_channel =as.numeric(Insurancetest$sourcing_channel)
+Insurancetest$Residence =as.numeric(Insurancetest$Residence)
+Insurancetest$default[Insurancetest$default == 1] = 0
+Insurancetest$default[Insurancetest$default == 2] = 1
+Insurancetrain$default[Insurancetrain$default == 1] = 0
+Insurancetrain$default[Insurancetrain$default == 2] = 1
+View(Insurancetrain)
+attach(Insurancetest)
+attach(Insurancetrain)
+features_train = as.matrix(Insurancetrain[,c(1:12,14,15)])
+label_train = as.matrix(Insurancetrain[,13])
+features_test = as.matrix(Insurancetest[,c(1:12,14,15)])
+XGBmodel = xgboost(
+data = features_train,
+label = label_train,
+eta = .001,
+max_depth = 5,
+min_child_weight = 3,
+nrounds = 10,
+nfold = 5,
+objective = "binary:logistic",
+verbose = 0,
+early_stopping_rounds = 10
+)
+XGBpredTest = predict(XGBmodel, features_test)
+tabXGBtest = table(Insurancetest$default, XGBpredTest>0.5)
+tabXGBtest
+sum(diag(tabXGBtest))/sum(tabXGBtest)
+XGBpredTrain = predict(XGBmodel, features_train)
+tabXGBtrain = table(Insurancetrain$default, XGBpredTrain>0.5)
+tabXGBtrain
+sum(diag(tabXGBtrain))/sum(tabXGBtrain)
+
+##END
